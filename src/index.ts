@@ -14,12 +14,15 @@ type Pending = { [hash: string]: { [nonce: string]: Transaction } };
 type Queued = { [hash: string]: { [nonce: string]: Transaction } };
 
 class Explorer {
-  web3: any;
-  eventEmitter = new EventEmitter();
+  private web3: any;
+  private eventEmitter = new EventEmitter();
 
-  pool: { pending: Pending; queued: Queued } = { pending: {}, queued: {} };
+  private pool: { pending: Pending; queued: Queued } = {
+    pending: {},
+    queued: {},
+  };
 
-  filters = {
+  private filters = {
     pending: () => true,
     queued: () => true,
   };
@@ -46,6 +49,17 @@ class Explorer {
         }
       );
     });
+  }
+
+  async getPoolContent() {
+    let { pending, queued } = await this.web3.txpool.content();
+    [this.pool.pending, this.pool.queued] = [pending, queued];
+    let pendingTransactions = this.getPoolTransactions("pending");
+    let queuedTransactions = this.getPoolTransactions("queued");
+    return {
+      pending: pendingTransactions,
+      queued: queuedTransactions,
+    };
   }
 
   getPoolTransactions(
