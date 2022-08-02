@@ -50,7 +50,7 @@ class Explorer {
 
   getPoolTransactions(
     pool: "pending" | "queued",
-    filter: (...params: any) => boolean
+    filter: (...params: any) => boolean = () => true
   ) {
     let data = this.pool[pool];
     let rawTransactions: Transaction[] = Object.values(data)
