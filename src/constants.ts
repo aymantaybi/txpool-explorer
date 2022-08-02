@@ -1,14 +1,14 @@
 const options = {
   timeout: 10000,
   clientConfig: {
-    maxReceivedFrameSize: 1000000000,
-    maxReceivedMessageSize: 1000000000,
+    maxReceivedFrameSize: 100000000000,
+    maxReceivedMessageSize: 100000000000,
     keepalive: true,
-    keepaliveInterval: 1000,
+    keepaliveInterval: 10000,
   },
   reconnect: {
     auto: true,
-    delay: 100,
+    delay: 10,
     maxAttempts: 10,
     onTimeout: false,
   },
