@@ -8,7 +8,7 @@ import { EventEmitter } from "events";
 
 interface Constructor {
   host: string;
-}
+};
 
 type Pending = { [hash: string]: { [nonce: string]: Transaction } };
 type Queued = { [hash: string]: { [nonce: string]: Transaction } };
@@ -16,7 +16,7 @@ type Queued = { [hash: string]: { [nonce: string]: Transaction } };
 interface Content {
   pending: Pending;
   queued: Queued;
-}
+};
 
 class Explorer {
   private web3: any;
