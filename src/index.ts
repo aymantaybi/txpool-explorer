@@ -8,7 +8,7 @@ import { EventEmitter } from "events";
 
 interface Constructor {
   host: string;
-};
+}
 
 type Pending = { [hash: string]: { [nonce: string]: Transaction } };
 type Queued = { [hash: string]: { [nonce: string]: Transaction } };
@@ -16,10 +16,10 @@ type Queued = { [hash: string]: { [nonce: string]: Transaction } };
 interface Content {
   pending: Pending;
   queued: Queued;
-};
+}
 
 class Explorer {
-  private web3: any;
+  web3: any;
   private eventEmitter = new EventEmitter();
 
   private pool: { pending: Transaction[]; queued: Transaction[] } = {
@@ -43,17 +43,21 @@ class Explorer {
       methods: [{ name: "content", call: "txpool_content" }],
     });
 
-    this.web3.eth.subscribe("pendingTransactions").on("data", () => {
-      this.getPoolContent().then(({ pending, queued }) => {
-        [this.pool.pending, this.pool.queued] = [pending, queued];
-        let pendingTransactions = this.getPoolTransactions(
-          "pending",
-          this.filters["pending"]
-        );
-        pendingTransactions.length &&
-          this.eventEmitter.emit("pending", pendingTransactions);
+    this.web3.eth
+      .subscribe("pendingTransactions")
+      .on("data", (transaction: string) => {
+        this.getPoolContent().then(({ pending, queued }) => {
+          console.log(transaction);
+          return;
+          [this.pool.pending, this.pool.queued] = [pending, queued];
+          let pendingTransactions = this.getPoolTransactions(
+            "pending",
+            this.filters["pending"]
+          );
+          pendingTransactions.length &&
+            this.eventEmitter.emit("pending", pendingTransactions);
+        });
       });
-    });
   }
 
   async getPoolContent() {
@@ -80,6 +84,15 @@ class Explorer {
     filter: (transaction: Transaction) => boolean = () => true
   ) {
     return this.pool[pool].filter((transaction) => filter(transaction));
+  }
+
+  getPoolTransactionsHash(
+    pool: "pending" | "queued",
+    filter: (transaction: Transaction) => boolean = () => true
+  ) {
+    return this.getPoolTransactions(pool, filter).map(
+      (transaction) => transaction.hash
+    );
   }
 
   watch(
