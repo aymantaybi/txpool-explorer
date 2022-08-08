@@ -1,13 +1,16 @@
 import Web3 from "web3";
-import { options } from "./constants";
+import { websocketProviderOptions } from "./constants";
 
 import Transaction from "./interfaces/transaction";
 import { formatTransaction } from "./helpers/formatter";
 
 import { EventEmitter } from "events";
 
+import { WebsocketProviderOptions } from "web3-core-helpers";
+
 interface Constructor {
   host: string;
+  options?: WebsocketProviderOptions;
 }
 
 type Pending = { [hash: string]: { [nonce: string]: Transaction } };
@@ -19,6 +22,7 @@ interface Content {
 }
 
 class Explorer {
+  websocketProvider: any;
   web3: any;
   private eventEmitter = new EventEmitter();
 
@@ -35,37 +39,45 @@ class Explorer {
     queued: () => true,
   };
 
-  constructor({ host }: Constructor) {
-    this.web3 = new Web3(new Web3.providers.WebsocketProvider(host, options));
+  private pendingTransactionsHashSortedAndJoined = "";
+
+  constructor({ host, options = websocketProviderOptions }: Constructor) {
+    this.websocketProvider = new Web3.providers.WebsocketProvider(
+      host,
+      options
+    );
+    this.web3 = new Web3(this.websocketProvider);
 
     this.web3.extend({
       property: "txpool",
       methods: [{ name: "content", call: "txpool_content" }],
     });
 
-    this.web3.eth
-      .subscribe("pendingTransactions")
-      .on("data", (transaction: string) => {
-        this.getPoolContent().then(({ pending, queued }) => {
-          console.log(transaction);
-          return;
-          [this.pool.pending, this.pool.queued] = [pending, queued];
-          let pendingTransactions = this.getPoolTransactions(
-            "pending",
-            this.filters["pending"]
-          );
-          pendingTransactions.length &&
-            this.eventEmitter.emit("pending", pendingTransactions);
-        });
-      });
+    this.web3.eth.subscribe("pendingTransactions").on("data", this.onData);
   }
 
-  async getPoolContent() {
-    let content: Content = await this.web3.txpool.content();
-    let pending = this.formatPoolContent(content, "pending");
-    let queued = this.formatPoolContent(content, "queued");
-    return { pending, queued };
-  }
+  private onData = async () => {
+    let { pending, queued } = await this.getPoolContent();
+    [this.pool.pending, this.pool.queued] = [pending, queued];
+    let pendingTransactionsHashSortedAndJoined = this.getPoolTransactionsHash(
+      "pending",
+      this.filters["pending"]
+    )
+      .sort()
+      .join("");
+    if (
+      this.pendingTransactionsHashSortedAndJoined !=
+      pendingTransactionsHashSortedAndJoined
+    ) {
+      this.pendingTransactionsHashSortedAndJoined =
+        pendingTransactionsHashSortedAndJoined;
+      let pendingTransactions = this.getPoolTransactions(
+        "pending",
+        this.filters["pending"]
+      );
+      this.eventEmitter.emit("pending", pendingTransactions);
+    }
+  };
 
   private formatPoolContent(content: Content, pool: "pending" | "queued") {
     let data = content[pool];
@@ -77,6 +89,13 @@ class Explorer {
     return rawTransactions.map((transaction: Transaction) =>
       formatTransaction(transaction)
     );
+  }
+
+  async getPoolContent() {
+    let content: Content = await this.web3.txpool.content();
+    let pending = this.formatPoolContent(content, "pending");
+    let queued = this.formatPoolContent(content, "queued");
+    return { pending, queued };
   }
 
   getPoolTransactions(

@@ -1,4 +1,4 @@
-const options = {
+const websocketProviderOptions = {
   timeout: 10000,
   clientConfig: {
     maxReceivedFrameSize: 100000000000,
@@ -14,4 +14,4 @@ const options = {
   },
 };
 
-export { options };
+export { websocketProviderOptions };
