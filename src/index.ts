@@ -48,16 +48,15 @@ class Explorer {
     options = websocketProviderOptions,
     websocketProvider,
   }: Constructor) {
-    if (host || websocketProvider) {
-      this.websocketProvider = host
-        ? new Web3.providers.WebsocketProvider(host, options)
-        : websocketProvider;
-      this.web3 = new Web3(this.websocketProvider!);
-    } else {
+    if (!host && !websocketProvider)
       throw new Error(
         "You need to provide either 'host' or 'websocketProvider' to the constructor "
       );
-    }
+
+    this.websocketProvider = host
+      ? new Web3.providers.WebsocketProvider(host, options)
+      : websocketProvider;
+    this.web3 = new Web3(this.websocketProvider!);
 
     this.web3.extend({
       property: "txpool",
