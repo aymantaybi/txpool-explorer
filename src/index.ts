@@ -7,10 +7,12 @@ import { formatTransaction } from "./helpers/formatter";
 import { EventEmitter } from "events";
 
 import { WebsocketProviderOptions } from "web3-core-helpers";
+import { WebsocketProvider } from "web3-providers-ws";
 
 interface Constructor {
-  host: string;
+  host?: string;
   options?: WebsocketProviderOptions;
+  websocketProvider?: WebsocketProvider;
 }
 
 type Pending = { [hash: string]: { [nonce: string]: Transaction } };
@@ -22,9 +24,9 @@ interface Content {
 }
 
 class Explorer {
-  websocketProvider: any;
   web3: any;
   private eventEmitter = new EventEmitter();
+  websocketProvider: WebsocketProvider | undefined;
 
   private pool: { pending: Transaction[]; queued: Transaction[] } = {
     pending: [],
@@ -41,12 +43,21 @@ class Explorer {
 
   private pendingTransactionsHashSortedAndJoined = "";
 
-  constructor({ host, options = websocketProviderOptions }: Constructor) {
-    this.websocketProvider = new Web3.providers.WebsocketProvider(
-      host,
-      options
-    );
-    this.web3 = new Web3(this.websocketProvider);
+  constructor({
+    host,
+    options = websocketProviderOptions,
+    websocketProvider,
+  }: Constructor) {
+    if (host || websocketProvider) {
+      this.websocketProvider = host
+        ? new Web3.providers.WebsocketProvider(host, options)
+        : websocketProvider;
+      this.web3 = new Web3(this.websocketProvider!);
+    } else {
+      throw new Error(
+        "You need to provide either 'host' or 'websocketProvider' to the constructor "
+      );
+    }
 
     this.web3.extend({
       property: "txpool",
