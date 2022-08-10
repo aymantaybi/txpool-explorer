@@ -6,7 +6,9 @@ dotenv.config();
 
 const { WEBSOCKET_PROVIDER } = process.env;
 
-const websocketProvider = new Web3.providers.WebsocketProvider(WEBSOCKET_PROVIDER!);
+const websocketProvider = new Web3.providers.WebsocketProvider(
+  WEBSOCKET_PROVIDER!
+);
 
 const explorer = new TxpoolExplorer({ websocketProvider });
 
@@ -16,7 +18,7 @@ let filter = (transaction: Transaction) =>
   transaction.to == "0x7D0556D55ca1a92708681e2e231733EBd922597D";
 
 explorer.watch({ pool, filter }, (transactions: Transaction[]) => {
-  console.log(transactions);
+  console.log(`watcher 1 ${transactions.map((tx) => tx.from).join(',')}`);
 });
 
 explorer.getPoolContent().then((content) => {

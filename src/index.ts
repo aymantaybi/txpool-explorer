@@ -33,14 +33,6 @@ class Explorer {
     queued: [],
   };
 
-  private filters: {
-    pending: (transaction: Transaction) => boolean;
-    queued: (transaction: Transaction) => boolean;
-  } = {
-    pending: () => true,
-    queued: () => true,
-  };
-
   private pendingTransactionsHashSortedAndJoined = "";
 
   constructor({
@@ -68,25 +60,9 @@ class Explorer {
 
   private onData = async () => {
     let { pending, queued } = await this.getPoolContent();
+    this.eventEmitter.emit("pending", pending);
+    this.eventEmitter.emit("queued", queued);
     [this.pool.pending, this.pool.queued] = [pending, queued];
-    let pendingTransactionsHashSortedAndJoined = this.getPoolTransactionsHash(
-      "pending",
-      this.filters["pending"]
-    )
-      .sort()
-      .join("");
-    if (
-      this.pendingTransactionsHashSortedAndJoined !=
-      pendingTransactionsHashSortedAndJoined
-    ) {
-      this.pendingTransactionsHashSortedAndJoined =
-        pendingTransactionsHashSortedAndJoined;
-      let pendingTransactions = this.getPoolTransactions(
-        "pending",
-        this.filters["pending"]
-      );
-      this.eventEmitter.emit("pending", pendingTransactions);
-    }
   };
 
   private formatPoolContent(content: Content, pool: "pending" | "queued") {
@@ -134,8 +110,24 @@ class Explorer {
     },
     callback: (transactions: Transaction[]) => void = () => {}
   ) {
-    this.filters[pool] = filter;
-    this.eventEmitter.on(pool, callback);
+    this.eventEmitter.on(pool, (transactions: Transaction[]) => {
+      let oldPendingTransactionsHash = this.getPoolTransactionsHash(
+        "pending",
+        filter
+      );
+
+      let newPendingTransactionsHash = transactions
+        .filter(filter)
+        .map((transaction: Transaction) => transaction.hash);
+
+      if (
+        oldPendingTransactionsHash.sort().join("") ==
+        newPendingTransactionsHash.sort().join("")
+      )
+        return;
+
+      callback(transactions.filter(filter));
+    });
     return this.eventEmitter;
   }
 }
