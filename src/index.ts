@@ -9,6 +9,8 @@ import { EventEmitter } from "events";
 import { WebsocketProviderOptions } from "web3-core-helpers";
 import { WebsocketProvider } from "web3-providers-ws";
 
+import Queue from "async-node-queue";
+
 interface Constructor {
   host?: string;
   options?: WebsocketProviderOptions;
@@ -32,8 +34,7 @@ class Explorer {
     pending: [],
     queued: [],
   };
-
-  private pendingTransactionsHashSortedAndJoined = "";
+  queue: Queue;
 
   constructor({
     host,
@@ -50,12 +51,16 @@ class Explorer {
       : websocketProvider;
     this.web3 = new Web3(this.websocketProvider!);
 
+    this.queue = new Queue({ auto: true, limit: 10 });
+
     this.web3.extend({
       property: "txpool",
       methods: [{ name: "content", call: "txpool_content" }],
     });
 
-    this.web3.eth.subscribe("pendingTransactions").on("data", this.onData);
+    this.web3.eth
+      .subscribe("pendingTransactions")
+      .on("data", () => this.queue.add(this.onData, []));
   }
 
   private onData = async () => {
