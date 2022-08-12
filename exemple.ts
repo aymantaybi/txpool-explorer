@@ -17,7 +17,7 @@ let pool: "pending" | "queued" = "pending";
 let filter = (transaction: Transaction) =>
   transaction.to == "0x7D0556D55ca1a92708681e2e231733EBd922597D";
 
-explorer.watch({ pool }, (transactions: Transaction[]) => {
+explorer.watch({ pool, filter }, (transactions: Transaction[]) => {
   console.log(transactions.map((transaction) => transaction.hash));
 });
 

@@ -11,6 +11,8 @@ import { WebsocketProvider } from "web3-providers-ws";
 
 import Queue from "async-node-queue";
 
+import { getTransactionsGlobalHash } from "./utils";
+
 interface Constructor {
   host?: string;
   options?: WebsocketProviderOptions;
@@ -116,22 +118,17 @@ class Explorer {
     callback: (transactions: Transaction[]) => void = () => {}
   ) {
     this.eventEmitter.on(pool, (transactions: Transaction[]) => {
-      let oldPendingTransactionsHash = this.getPoolTransactionsHash(
-        "pending",
-        filter
-      );
+      let oldTransactions = this.getPoolTransactions(pool, filter);
+      let newTransactions = transactions.filter(filter);
 
-      let newPendingTransactionsHash = transactions
-        .filter(filter)
-        .map((transaction: Transaction) => transaction.hash);
+      let oldTransactionsGlobalHash =
+        getTransactionsGlobalHash(oldTransactions);
+      let newTransactionsGlobalHash =
+        getTransactionsGlobalHash(newTransactions);
 
-      if (
-        oldPendingTransactionsHash.sort().join("") ==
-        newPendingTransactionsHash.sort().join("")
-      )
-        return;
+      if (oldTransactionsGlobalHash == newTransactionsGlobalHash) return;
 
-      callback(transactions.filter(filter));
+      callback(newTransactions);
     });
     return this.eventEmitter;
   }
