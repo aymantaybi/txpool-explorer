@@ -1,6 +1,6 @@
 {
   "name": "txpool-explorer",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "repository": "https://github.com/aymantaybi/txpool-explorer",
   "description": "Transaction pool explorer",
   "main": "dist/index.js",
